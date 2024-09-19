@@ -1,0 +1,54 @@
+import pyrealsense2.pyrealsense2 as rs
+import numpy as np
+import cv2
+import time
+import os, datetime
+
+# Configure depth and color streams
+pipeline = rs.pipeline()
+config = rs.config()
+config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, 1920, 1080, rs.format.bgr8, 30)
+align = rs.align(rs.stream.color)
+
+# Start streaming
+pipeline.start(config)
+depth_scale = pipeline.get_active_profile().get_device().first_depth_sensor().get_depth_scale()
+
+imgdir = "/Users/theimc/Pictures"
+
+
+def create_folder(path):
+    try:
+        if not os.path.exists(path + 'original'):  # 원본 이미지 저장폴더
+            os.makedirs(path + 'original')
+    except OSError:
+        print('\nError: Creating directory. ')
+
+
+try:
+    while True:
+        frames = pipeline.wait_for_frames()
+        aligned_frames = align.process(frames)
+        depth_frame = aligned_frames.get_depth_frame()
+        color_frame = aligned_frames.get_color_frame()
+        if not depth_frame or not color_frame:
+            continue
+        intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
+
+        color_image = np.asanyarray(color_frame.get_data())
+
+        now = datetime.datetime.now()
+        key = cv2.waitKey(1)
+        if key == 32:  # 스페이스바(ASCII 코드 32)
+            imgdir_date = imgdir + str(now.strftime('%Y-%m-%d')) + '/'  # 날짜별 폴더
+            create_folder(imgdir_date)  # 혹시 날짜 변경시 폴더 추가생성하도록 체크.
+            filename = str(now.strftime('%Y-%m-%d_%H%M.jpg'))
+            color_file_path = filename.replace('.jpg', '_original.jpg')
+            depth_file_path = filename.replace('.jpg', '_depth.jpg')
+            cv2.imwrite(imgdir_date + 'original/' + color_file_path, color_image)
+        cv2.namedWindow('RealSense')
+        cv2.imshow('RealSense', color_image)
+finally:
+    # Stop streaming
+    pipeline.stop()

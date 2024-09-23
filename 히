@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import time
 import os, datetime
+import winsound
 
 # Configure depth and color streams
 pipeline = rs.pipeline()
@@ -15,7 +16,7 @@ align = rs.align(rs.stream.color)
 pipeline.start(config)
 depth_scale = pipeline.get_active_profile().get_device().first_depth_sensor().get_depth_scale()
 
-imgdir = "/Users/theimc/Pictures"
+imgdir = "/Users/user/Pictures/"
 
 
 def create_folder(path):
@@ -43,10 +44,12 @@ try:
         if key == 32:  # 스페이스바(ASCII 코드 32)
             imgdir_date = imgdir + str(now.strftime('%Y-%m-%d')) + '/'  # 날짜별 폴더
             create_folder(imgdir_date)  # 혹시 날짜 변경시 폴더 추가생성하도록 체크.
-            filename = str(now.strftime('%Y-%m-%d_%H%M.jpg'))
+            filename = str(now.strftime('%Y-%m-%d_%H%M%S.jpg'))
             color_file_path = filename.replace('.jpg', '_original.jpg')
             depth_file_path = filename.replace('.jpg', '_depth.jpg')
             cv2.imwrite(imgdir_date + 'original/' + color_file_path, color_image)
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS)
+
         cv2.namedWindow('RealSense')
         cv2.imshow('RealSense', color_image)
 finally:
